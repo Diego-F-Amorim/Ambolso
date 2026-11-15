@@ -1,4 +1,6 @@
-# 💰 Finanças App
+# 💰 Ambolso
+
+Seu dinheiro pessoal e o do seu negócio, cada um no seu bolso!
 
 Plataforma de gestão financeira para **pessoas e empresas**. Um mesmo sistema permite
 controlar as finanças pessoais e as de um negócio, em espaços separados e com controle

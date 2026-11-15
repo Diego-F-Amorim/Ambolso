@@ -13,9 +13,11 @@ export function AppLayout() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="border-b border-slate-800">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <span className="font-bold">Finanças App</span>
+          <span className="font-bold">Ambolso</span>
           <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-slate-400 sm:inline">{user?.name}</span>
+            <span className="hidden text-sm text-slate-400 sm:inline">
+              {user?.name}
+            </span>
             <button
               onClick={logout}
               className="text-sm text-slate-400 transition hover:text-slate-100"
