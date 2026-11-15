@@ -12,6 +12,8 @@ export function TransactionsPage() {
   const queryClient = useQueryClient();
   const [month, setMonth] = useState(currentMonth);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
 
   const {
     data: transactions = [],
@@ -20,18 +22,43 @@ export function TransactionsPage() {
   } = useQuery({
     queryKey: ["transactions", workspace.id, month],
     queryFn: () =>
-      api<Transaction[]>(`/workspaces/${workspace.id}/transactions?month=${month}`),
+      api<Transaction[]>(
+        `/workspaces/${workspace.id}/transactions?month=${month}`,
+      ),
   });
 
   const deleteTransaction = useMutation({
     mutationFn: (id: string) =>
-      api(`/workspaces/${workspace.id}/transactions/${id}`, { method: "DELETE" }),
+      api(`/workspaces/${workspace.id}/transactions/${id}`, {
+        method: "DELETE",
+      }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["transactions", workspace.id] }),
+      queryClient.invalidateQueries({
+        queryKey: ["transactions", workspace.id],
+      }),
   });
+
+  function openNewForm() {
+    setEditingTransaction(null);
+    setIsFormOpen(true);
+  }
+
+  function openEditForm(transaction: Transaction) {
+    setEditingTransaction(transaction);
+    setIsFormOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeForm() {
+    setIsFormOpen(false);
+    setEditingTransaction(null);
+  }
 
   function handleDelete(transaction: Transaction) {
     if (window.confirm(`Excluir "${transaction.description}"?`)) {
+      if (editingTransaction?.id === transaction.id) {
+        closeForm();
+      }
       deleteTransaction.mutate(transaction.id);
     }
   }
@@ -52,8 +79,16 @@ export function TransactionsPage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <SummaryCard label="Receitas" value={income} valueClass="text-emerald-400" />
-        <SummaryCard label="Despesas" value={expense} valueClass="text-red-400" />
+        <SummaryCard
+          label="Receitas"
+          value={income}
+          valueClass="text-emerald-400"
+        />
+        <SummaryCard
+          label="Despesas"
+          value={expense}
+          valueClass="text-red-400"
+        />
         <SummaryCard
           label="Saldo"
           value={balance}
@@ -62,18 +97,25 @@ export function TransactionsPage() {
       </div>
 
       <button
-        onClick={() => setIsFormOpen((open) => !open)}
+        onClick={isFormOpen ? closeForm : openNewForm}
         className="w-full rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-slate-950 transition hover:bg-emerald-400 sm:w-auto"
       >
         {isFormOpen ? "Cancelar" : "+ Novo lançamento"}
       </button>
 
       {isFormOpen && (
-        <TransactionForm workspaceId={workspace.id} onSuccess={() => setIsFormOpen(false)} />
+        <TransactionForm
+          key={editingTransaction?.id ?? "new"}
+          workspaceId={workspace.id}
+          transaction={editingTransaction ?? undefined}
+          onSuccess={closeForm}
+        />
       )}
 
       {isLoading && <p className="text-slate-400">Carregando...</p>}
-      {isError && <p className="text-red-400">Erro ao carregar os lançamentos.</p>}
+      {isError && (
+        <p className="text-red-400">Erro ao carregar os lançamentos.</p>
+      )}
 
       {!isLoading && !isError && transactions.length === 0 && (
         <p className="rounded-2xl border border-dashed border-slate-800 p-8 text-center text-slate-400">
@@ -84,31 +126,54 @@ export function TransactionsPage() {
       {transactions.length > 0 && (
         <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
           {transactions.map((transaction) => (
-            <li key={transaction.id} className="flex items-center gap-3 px-4 py-3">
+            <li
+              key={transaction.id}
+              className={`flex items-center gap-3 px-4 py-3 ${
+                editingTransaction?.id === transaction.id
+                  ? "bg-slate-800/60"
+                  : ""
+              }`}
+            >
               <span
                 className="size-3 shrink-0 rounded-full"
-                style={{ backgroundColor: transaction.category.color ?? "#64748b" }}
+                style={{
+                  backgroundColor: transaction.category.color ?? "#64748b",
+                }}
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{transaction.description}</p>
+                <p className="truncate font-medium">
+                  {transaction.description}
+                </p>
                 <p className="text-sm text-slate-400">
                   {transaction.category.name} · {formatDate(transaction.date)}
                 </p>
               </div>
               <span
                 className={`shrink-0 font-semibold ${
-                  transaction.type === "INCOME" ? "text-emerald-400" : "text-red-400"
+                  transaction.type === "INCOME"
+                    ? "text-emerald-400"
+                    : "text-red-400"
                 }`}
               >
-                {transaction.type === "INCOME" ? "+" : "−"} {formatCurrency(transaction.amount)}
+                {transaction.type === "INCOME" ? "+" : "−"}{" "}
+                {formatCurrency(transaction.amount)}
               </span>
-              <button
-                onClick={() => handleDelete(transaction)}
-                aria-label={`Excluir ${transaction.description}`}
-                className="rounded-md px-2 py-1 text-slate-500 transition hover:bg-slate-800 hover:text-red-400"
-              >
-                ✕
-              </button>
+              <div className="flex shrink-0">
+                <button
+                  onClick={() => openEditForm(transaction)}
+                  aria-label={`Editar ${transaction.description}`}
+                  className="rounded-md px-2 py-1 text-slate-500 transition hover:bg-slate-800 hover:text-slate-100"
+                >
+                  ✎
+                </button>
+                <button
+                  onClick={() => handleDelete(transaction)}
+                  aria-label={`Excluir ${transaction.description}`}
+                  className="rounded-md px-2 py-1 text-slate-500 transition hover:bg-slate-800 hover:text-red-400"
+                >
+                  ✕
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -127,7 +192,9 @@ function SummaryCard({ label, value, valueClass }: SummaryCardProps) {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
       <p className="text-sm text-slate-400">{label}</p>
-      <p className={`mt-1 text-xl font-bold ${valueClass}`}>{formatCurrency(value)}</p>
+      <p className={`mt-1 text-xl font-bold ${valueClass}`}>
+        {formatCurrency(value)}
+      </p>
     </div>
   );
 }
