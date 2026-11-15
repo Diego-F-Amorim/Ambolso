@@ -7,6 +7,7 @@ import { env } from "./env.js";
 import { ensureAuthenticated } from "./middlewares/ensure-authenticated.js";
 import { ensureWorkspaceAccess } from "./middlewares/ensure-workspace-access.js";
 import { transactionsRoutes } from "./modules/transactions/transactions.routes.js";
+import { dashboardRoutes } from "./modules/dashboard/dashboard.routes.js";
 
 const app = express();
 
@@ -20,9 +21,9 @@ app.get("/health", (req, res) => {
 
 app.get("/categories", async (req, res) => {
   const categories = await prisma.category.findMany({
-  where: { workspaceId: null },
-  orderBy: [{ type: "asc" }, { name: "asc" }],
-});
+    where: { workspaceId: null },
+    orderBy: [{ type: "asc" }, { name: "asc" }],
+  });
   res.json(categories);
 });
 
@@ -33,6 +34,13 @@ app.use(
   ensureAuthenticated,
   ensureWorkspaceAccess,
   transactionsRoutes,
+);
+
+app.use(
+  "/workspaces/:workspaceId/dashboard",
+  ensureAuthenticated,
+  ensureWorkspaceAccess,
+  dashboardRoutes,
 );
 
 app.use(errorHandler);

@@ -5,6 +5,7 @@ import { currentMonth, formatCurrency, formatDate } from "../lib/format";
 import { useCurrentWorkspace } from "../hooks/use-current-workspace";
 import { MonthPicker } from "../components/month-picker";
 import { TransactionForm } from "../components/transaction-form";
+import { SummaryCard } from "../components/summary-card";
 import type { Transaction } from "../types";
 
 export function TransactionsPage() {
@@ -32,10 +33,14 @@ export function TransactionsPage() {
       api(`/workspaces/${workspace.id}/transactions/${id}`, {
         method: "DELETE",
       }),
-    onSuccess: () =>
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["transactions", workspace.id],
-      }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", workspace.id],
+      });
+    },
   });
 
   function openNewForm() {
@@ -179,22 +184,5 @@ export function TransactionsPage() {
         </ul>
       )}
     </section>
-  );
-}
-
-interface SummaryCardProps {
-  label: string;
-  value: number;
-  valueClass: string;
-}
-
-function SummaryCard({ label, value, valueClass }: SummaryCardProps) {
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className={`mt-1 text-xl font-bold ${valueClass}`}>
-        {formatCurrency(value)}
-      </p>
-    </div>
   );
 }

@@ -50,3 +50,26 @@ export function shiftMonth(month: string, delta: number) {
 export function formatCentsForInput(cents: number) {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
+
+const shortMonthFormatter = new Intl.DateTimeFormat("pt-BR", {
+  month: "short",
+  timeZone: "UTC",
+});
+
+export function formatShortMonth(month: string) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return shortMonthFormatter
+    .format(new Date(Date.UTC(year, monthNumber - 1, 1)))
+    .replace(".", "");
+}
+
+const compactCurrencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+export function formatCompactCurrency(cents: number) {
+  return compactCurrencyFormatter.format(cents / 100);
+}
