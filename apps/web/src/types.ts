@@ -41,3 +41,24 @@ export interface Transaction {
     color: string | null;
   };
 }
+
+export interface DashboardData {
+  month: string;
+  summary: {
+    income: number;
+    expense: number;
+    balance: number;
+  };
+  expensesByCategory: {
+    categoryId: string;
+    name: string;
+    color: string | null;
+    total: number;
+    percentage: number;
+  }[];
+  monthlyEvolution: {
+    month: string;
+    income: number;
+    expense: number;
+  }[];
+}

@@ -20,7 +20,7 @@ de acesso por papel.
 | Lançamentos de receitas e despesas              |    ✅    |    ✅     |
 | Categorias padrão                               |    ✅    |    ⏳     |
 | Categorias personalizadas                       |    ⏳    |    ⏳     |
-| Dashboard (saldo e gastos por categoria no mês) |    ⏳    |    ⏳     |
+| Dashboard (saldo e gastos por categoria no mês) |    ✅    |    ✅     |
 | Despesas recorrentes                            |    ⏳    |    ⏳     |
 | Metas (economia e limite de gasto)              |    ⏳    |    ⏳     |
 | Exportação CSV                                  |    ⏳    |    ⏳     |
@@ -60,7 +60,7 @@ Assim, o mesmo sistema atende tanto o controle pessoal quanto o empresarial.
 
 **Back-end:** Node.js · TypeScript · Express 5 · Prisma 7 · PostgreSQL 18 · Zod · JWT · bcrypt
 
-**Front-end:** React · TypeScript · Vite · Tailwind CSS
+**Front-end:** React · TypeScript · Vite · Tailwind CSS · TanStack Query · React Router · React Hook Form · Recharts
 
 **Infraestrutura:** Docker / Docker Compose
 
@@ -135,18 +135,19 @@ npm run dev                   # http://localhost:5173
 
 ## 🔌 Endpoints da API
 
-| Método | Rota                               | Descrição                                                  | Auth  |
-| ------ | ---------------------------------- | ---------------------------------------------------------- | :---: |
-| GET    | `/health`                          | Status da API                                              |   —   |
-| GET    | `/categories`                      | Categorias padrão                                          |   —   |
-| POST   | `/auth/register`                   | Cadastro (cria espaço pessoal)                             |   —   |
-| POST   | `/auth/login`                      | Login, retorna JWT                                         |   —   |
-| GET    | `/auth/me`                         | Dados do usuário e seus espaços                            |  🔒   |
-| GET    | `/workspaces/:id/transactions`     | Lista lançamentos (filtros: `month`, `type`, `categoryId`) |  🔒   |
-| GET    | `/workspaces/:id/transactions/:id` | Detalha um lançamento                                      |  🔒   |
-| POST   | `/workspaces/:id/transactions`     | Cria lançamento                                            | 🔒 ✏️ |
-| PATCH  | `/workspaces/:id/transactions/:id` | Edita lançamento                                           | 🔒 ✏️ |
-| DELETE | `/workspaces/:id/transactions/:id` | Exclui lançamento                                          | 🔒 ✏️ |
+| Método | Rota                                      | Descrição                                                  | Auth  |
+| ------ | ----------------------------------------- | ---------------------------------------------------------- | :---: |
+| GET    | `/health`                                 | Status da API                                              |   —   |
+| GET    | `/categories`                             | Categorias padrão                                          |   —   |
+| POST   | `/auth/register`                          | Cadastro (cria espaço pessoal)                             |   —   |
+| POST   | `/auth/login`                             | Login, retorna JWT                                         |   —   |
+| GET    | `/auth/me`                                | Dados do usuário e seus espaços                            |  🔒   |
+| GET    | `/workspaces/:id/transactions`            | Lista lançamentos (filtros: `month`, `type`, `categoryId`) |  🔒   |
+| GET    | `/workspaces/:id/transactions/:id`        | Detalha um lançamento                                      |  🔒   |
+| POST   | `/workspaces/:id/transactions`            | Cria lançamento                                            | 🔒 ✏️ |
+| PATCH  | `/workspaces/:id/transactions/:id`        | Edita lançamento                                           | 🔒 ✏️ |
+| DELETE | `/workspaces/:id/transactions/:id`        | Exclui lançamento                                          | 🔒 ✏️ |
+| GET    | `/workspaces/:id/dashboard?month=AAAA-MM` | Resumo do mês, gastos por categoria e evolução de 6 meses  |  🔒   |
 
 🔒 Requer token · ✏️ Requer papel `OWNER`, `ADMIN` ou `MEMBER`
 

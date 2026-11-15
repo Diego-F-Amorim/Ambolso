@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../errors/app-error.js";
+import { monthRange } from "../../lib/dates.js";
 import type {
   CreateTransactionInput,
   ListTransactionsFilters,
@@ -9,13 +10,6 @@ import type {
 const categoryInclude = {
   category: { select: { id: true, name: true, color: true } },
 } as const;
-
-function monthRange(month: string) {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
-  const end = new Date(Date.UTC(year, monthNumber, 1));
-  return { start, end };
-}
 
 async function assertValidCategory(
   workspaceId: string,
@@ -33,7 +27,10 @@ async function assertValidCategory(
     throw new AppError("Categoria não encontrada.", 404);
   }
   if (category.type !== type) {
-    throw new AppError("A categoria não corresponde ao tipo do lançamento.", 422);
+    throw new AppError(
+      "A categoria não corresponde ao tipo do lançamento.",
+      422,
+    );
   }
 }
 

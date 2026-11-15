@@ -96,6 +96,7 @@ export function TransactionForm({
       queryClient.invalidateQueries({
         queryKey: ["transactions", workspaceId],
       });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", workspaceId] });
       onSuccess();
     },
   });
