@@ -46,3 +46,7 @@ export function shiftMonth(month: string, delta: number) {
   const date = new Date(Date.UTC(year, monthNumber - 1 + delta, 1));
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
 }
+
+export function formatCentsForInput(cents: number) {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}

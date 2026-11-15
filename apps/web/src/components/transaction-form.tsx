@@ -4,7 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../lib/api";
-import { parseCurrencyToCents, todayISO } from "../lib/format";
+import {
+  formatCentsForInput,
+  parseCurrencyToCents,
+  todayISO,
+} from "../lib/format";
 import type { Category, Transaction, TransactionType } from "../types";
 import { FormField } from "./form-field";
 
@@ -20,12 +24,18 @@ type TransactionFormData = z.infer<typeof transactionSchema>;
 
 interface TransactionFormProps {
   workspaceId: string;
+  transaction?: Transaction; // se vier preenchido, o formulário edita
   onSuccess: () => void;
 }
 
-export function TransactionForm({ workspaceId, onSuccess }: TransactionFormProps) {
+export function TransactionForm({
+  workspaceId,
+  transaction,
+  onSuccess,
+}: TransactionFormProps) {
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState<string | null>(null);
+  const isEditing = transaction !== undefined;
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -40,26 +50,52 @@ export function TransactionForm({ workspaceId, onSuccess }: TransactionFormProps
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
-    defaultValues: {
-      type: "EXPENSE",
-      description: "",
-      amount: "",
-      date: todayISO(),
-      categoryId: "",
-    },
+    defaultValues: transaction
+      ? {
+          type: transaction.type,
+          description: transaction.description,
+          amount: formatCentsForInput(transaction.amount),
+          date: transaction.date.slice(0, 10),
+          categoryId: transaction.categoryId,
+        }
+      : {
+          type: "EXPENSE",
+          description: "",
+          amount: "",
+          date: todayISO(),
+          categoryId: "",
+        },
   });
 
   const type = useWatch({ control, name: "type" });
-  const filteredCategories = categories.filter((category) => category.type === type);
+  const filteredCategories = categories.filter(
+    (category) => category.type === type,
+  );
 
-  const createTransaction = useMutation({
-    mutationFn: (data: TransactionFormData) =>
-      api<Transaction>(`/workspaces/${workspaceId}/transactions`, {
-        method: "POST",
-        body: JSON.stringify({ ...data, amount: parseCurrencyToCents(data.amount) }),
-      }),
+  const saveTransaction = useMutation({
+    mutationFn: (data: TransactionFormData) => {
+      const body = JSON.stringify({
+        ...data,
+        amount: parseCurrencyToCents(data.amount),
+      });
+
+      return transaction
+        ? api<Transaction>(
+            `/workspaces/${workspaceId}/transactions/${transaction.id}`,
+            {
+              method: "PATCH",
+              body,
+            },
+          )
+        : api<Transaction>(`/workspaces/${workspaceId}/transactions`, {
+            method: "POST",
+            body,
+          });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions", workspaceId] });
+      queryClient.invalidateQueries({
+        queryKey: ["transactions", workspaceId],
+      });
       onSuccess();
     },
   });
@@ -67,9 +103,11 @@ export function TransactionForm({ workspaceId, onSuccess }: TransactionFormProps
   async function onSubmit(data: TransactionFormData) {
     setServerError(null);
     try {
-      await createTransaction.mutateAsync(data);
+      await saveTransaction.mutateAsync(data);
     } catch (error) {
-      setServerError(error instanceof ApiError ? error.message : "Não foi possível salvar.");
+      setServerError(
+        error instanceof ApiError ? error.message : "Não foi possível salvar.",
+      );
     }
   }
 
@@ -84,11 +122,17 @@ export function TransactionForm({ workspaceId, onSuccess }: TransactionFormProps
       noValidate
       className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-6"
     >
+      <h2 className="text-lg font-semibold">
+        {isEditing ? "Editar lançamento" : "Novo lançamento"}
+      </h2>
+
       <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-800 p-1">
         {(["EXPENSE", "INCOME"] as const).map((option) => {
           const isActive = type === option;
           const activeClass =
-            option === "EXPENSE" ? "bg-red-500 text-white" : "bg-emerald-500 text-slate-950";
+            option === "EXPENSE"
+              ? "bg-red-500 text-white"
+              : "bg-emerald-500 text-slate-950";
 
           return (
             <button
@@ -131,7 +175,10 @@ export function TransactionForm({ workspaceId, onSuccess }: TransactionFormProps
       </div>
 
       <div>
-        <label htmlFor="categoryId" className="mb-1 block text-sm font-medium text-slate-300">
+        <label
+          htmlFor="categoryId"
+          className="mb-1 block text-sm font-medium text-slate-300"
+        >
           Categoria
         </label>
         <select
@@ -147,12 +194,16 @@ export function TransactionForm({ workspaceId, onSuccess }: TransactionFormProps
           ))}
         </select>
         {errors.categoryId && (
-          <p className="mt-1 text-sm text-red-400">{errors.categoryId.message}</p>
+          <p className="mt-1 text-sm text-red-400">
+            {errors.categoryId.message}
+          </p>
         )}
       </div>
 
       {serverError && (
-        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">{serverError}</p>
+        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          {serverError}
+        </p>
       )}
 
       <button
@@ -160,7 +211,11 @@ export function TransactionForm({ workspaceId, onSuccess }: TransactionFormProps
         disabled={isSubmitting}
         className="w-full rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-60"
       >
-        {isSubmitting ? "Salvando..." : "Salvar lançamento"}
+        {isSubmitting
+          ? "Salvando..."
+          : isEditing
+            ? "Salvar alterações"
+            : "Salvar lançamento"}
       </button>
     </form>
   );
